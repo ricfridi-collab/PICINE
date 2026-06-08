@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة حجز المسبح (الإصدار المستقر)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #00acc1;
+            --primary-dark: #007c91;
+            --text-color: #333;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            --radius: 20px;
+            --danger: #d32f2f;
+            --success: #2e7d32;
+            --warning: #fbc02d;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background: url('https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?q=80&w=1920&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            color: var(--text-color);
+            line-height: 1.6;
+            padding-bottom: 100px;
+        }
+
+        body::before { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 40, 50, 0.2); z-index: -1; }
+
+        header { color: #fff; padding: 1.5rem 5%; display: flex; justify-content: space-between; align-items: center; text-shadow: 0 2px 10px rgba(0,0,0,0.4); }
+        header h1 { font-size: 1.8rem; font-weight: 800; background: rgba(255,255,255,0.25); padding: 8px 20px; border-radius: 15px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); }
+        .admin-btn { color: #fff; font-size: 1.5rem; cursor: pointer; transition: 0.3s; }
+        .admin-btn:hover { color: var(--primary-color); }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 1rem 1.5rem; display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; }
+        @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+
+        .card { background: var(--glass-bg); backdrop-filter: blur(25px); border-radius: var(--radius); padding: 2rem; box-shadow: var(--shadow); margin-bottom: 20px; }
+        
+        .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 3px solid rgba(0, 172, 193, 0.2); }
+        .step-num { background: var(--primary-color); color: #fff; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .section-title { font-size: 1.4rem; color: var(--primary-dark); font-weight: 800; }
+
+        .form-group { margin-bottom: 2rem; position: relative; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 700; color: #455a64; font-size: 1rem; }
+        input, select { width: 100%; padding: 14px; border: 2px solid #cfd8dc; background: rgba(255,255,255,0.95); border-radius: 12px; font-size: 1.1rem; outline: none; transition: 0.3s; }
+        input:focus, select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 4px rgba(0, 172, 193, 0.1); }
+        input:invalid { border-color: var(--danger); }
+
+        /* --- Slots --- */
+        .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 12px; }
+        .slot { background: #f5f7f8; border: 2px solid #e0e0e0; color: #546e7a; padding: 12px 5px; border-radius: 12px; text-align: center; cursor: pointer; font-weight: 800; transition: all 0.2s; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
+        .slot:hover:not(.booked) { border-color: var(--primary-color); background: #e0f7fa; transform: translateY(-3px); }
+        .slot.selected { background: var(--primary-color); color: #fff; border-color: var(--primary-dark); transform: scale(1.05); box-shadow: 0 5px 15px rgba(0, 172, 193, 0.4); }
+        .slot.booked { background: #eceff1; color: #cfd8dc; cursor: not-allowed; border-color: #cfd8dc; }
+
+        /* --- Services --- */
+        .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
+        .service-card { background: #fff; border: 2px solid #eee; border-radius: 15px; padding: 15px; cursor: pointer; text-align: center; transition: 0.3s; position: relative; display: flex; flex-direction: column; align-items: center; min-height: 120px; justify-content: center; }
+        .service-card.fixed { border-color: var(--primary-color); background: rgba(0, 172, 193, 0.05); opacity: 0.8; cursor: default; }
+        .service-card.selectable:hover { border-color: var(--primary-color); background: #fcfcfc; transform: translateY(-2px); }
+        .service-card.selectable.active { border-color: var(--primary-color); background: rgba(0, 172, 193, 0.1); box-shadow: 0 4px 15px rgba(0, 172, 193, 0.2); border-width: 3px; }
+        .service-card.selectable.active::after { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; top: -10px; right: -10px; background: var(--primary-color); color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; border: 2px solid #fff; }
+        .service-card.disabled { opacity: 0.5; filter: grayscale(1); pointer-events: none; border-style: dashed; background: #eee; }
+        .service-card.disabled::after { content: 'متوقف'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); font-weight: bold; color: #d32f2f; font-size: 1.2rem; border: 2px solid #d32f2f; padding: 5px 10px; border-radius: 5px; background: rgba(255,255,255,0.9); }
+        .service-icon { font-size: 2rem; color: var(--primary-color); margin-bottom: 10px; }
+        .service-name { font-weight: 700; margin-bottom: 5px; font-size: 1rem; }
+        .service-price { font-size: 0.85rem; color: #666; font-weight: 600; }
+
+        /* --- Admin --- */
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* --- UI Elements --- */
+        .sticky-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); box-shadow: 0 -10px 30px rgba(0,0,0,0.1); padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; z-index: 1000; transform: translateY(110%); transition: transform 0.4s; }
+        .sticky-bar.visible { transform: translateY(0); }
+        .total-price { font-size: 1.8rem; font-weight: 800; color: var(--primary-dark); }
+        .btn-submit-large { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); color: #fff; border: none; padding: 14px 45px; border-radius: 50px; font-size: 1.1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.3s; min-width: 180px; justify-content: center; }
+        .btn-submit-large:hover { transform: translateY(-3px); box-shadow: 0 12px 25px rgba(0, 172, 193, 0.5); }
+        .btn-submit-large:disabled, .btn-submit-large.loading { background: #b0bec5; cursor: not-allowed; transform: none; box-shadow: none; pointer-events: none; opacity: 0.9; }
+        
+        /* --- Loading Overlay --- */
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 3000; display: flex; flex-direction: column; justify-content: center; align-items: center; visibility: hidden; opacity: 0; transition: 0.3s; backdrop-filter: blur(5px); }
+        .loading-overlay.active { visibility: visible; opacity: 1; }
+        .spinner { width: 50px; height: 50px; border: 5px solid #eee; border-top: 5px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { font-weight: bold; color: var(--primary-dark); font-size: 1.2rem; }
+        .error-box { background: #ffebee; color: var(--danger); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; display: none; }
+
+        .live-indicator { font-size: 0.8rem; color: var(--success); display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+        .blink { animation: blinker 1.5s linear infinite; color: #d32f2f; }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* --- Modals --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content { background: #fff; padding: 3rem; border-radius: 30px; width: 90%; max-width: 600px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto; }
+        .close-modal { position: absolute; top: 20px; left: 20px; background: #f5f5f5; border: none; font-size: 1.5rem; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        
+        .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 10px; background: #eee; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .tab-btn.active { background: var(--primary-color); color: #fff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .admin-table-wrapper { max-height: 300px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: right; }
+        .btn-cancel { background: #ffebee; color: var(--danger); border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .invoice-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 1rem; }
+
+    </style>
+</head>
+<body>
+
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loading-text">جاري المعالجة...</div>
+    </div>
+
+    <header>
+        <h1><i class="fa-solid fa-water"></i>  المسبح العائلي حي الرحامين</h1>
+        <div class="admin-btn" onclick="openAdmin()">
+            <i class="fa-solid fa-user-shield"></i>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <div class="section-header"><div class="step-num">1</div><div class="section-title">تحديد الموعد</div></div>
+            
+            <div class="form-group">
+                <div class="live-indicator"><i class="fa-solid fa-circle blink"></i> النظام متصل ومباشر</div>
+                <label>التاريخ</label>
+                <input type="date" id="booking-date" onchange="handleDateChange()">
+            </div>
+            
+            <div class="form-group"><label>الأوقات المتاحة</label>
+                <div class="slots-grid" id="slots-container"></div>
+                <div id="status-msg" style="margin-top: 10px; text-align: center; font-weight: bold; min-height: 20px;"></div>
+            </div>
+
+            <div class="form-group" style="background: #e3f2fd; padding: 20px; border-radius: 15px;">
+                <label>مدة الحجز</label>
+                <select id="duration" onchange="updateDuration()">
+                    <option value="1">ساعة واحدة</option>
+                    <option value="2" selected>ساعتين</option>
+                    <option value="3">3 ساعات</option>
+                    <option value="4">4 ساعات</option>
+                    <option value="5">5 ساعات</option>
+                </select>
+            </div>
+
+            <div class="section-header" style="margin-top: 3rem;"><div class="step-num">2</div><div class="section-title">الخدمات (اختيار متعدد)</div></div>
+            
+            <div class="form-group">
+                <div class="services-grid" id="services-container"></div>
+            </div>
+
+            <div class="section-header" style="margin-top: 3rem;"><div class="step-num">3</div><div class="section-title">بيانات الزبون</div></div>
+            <div class="form-group">
+                <label>الاسم واللقب</label>
+                <input type="text" id="client-name" placeholder="أدخل الاسم الكامل">
+                <div id="error-name" class="error-box">الاسم يجب أن يحتوي على 3 أحرف على الأقل</div>
+            </div>
+            <div class="form-group">
+                <label>رقم الهاتف</label>
+                <input type="tel" id="client-phone" placeholder="05XX... (10 أرقام)" inputmode="numeric">
+                <div id="error-phone" class="error-box">رقم الهاتف غير صحيح</div>
+            </div>
+            <div style="height: 60px;"></div>
+        </div>
+
+        <div class="card">
+            <div class="section-title"><i class="fa-solid fa-file-invoice-dollar"></i> تفاصيل الفاتورة</div>
+            <div id="invoice-details"></div>
+        </div>
+    </div>
+
+    <div class="sticky-bar" id="sticky-bar">
+        <div class="total-info">
+            <span style="font-size:0.9rem; color:#666;">الإجمالي النهائي</span>
+            <span class="total-price" id="sticky-total-display">0 د.ج</span>
+        </div>
+        <button class="btn-submit-large" id="btn-confirm" onclick="submitBooking()" disabled>
+            تأكيد الحجز <i class="fa-solid fa-check"></i>
+        </button>
+    </div>
+
+    <!-- Admin Modal -->
+    <div class="modal-overlay" id="admin-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal('admin-modal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--primary-dark);">لوحة التحكم</h2>
+            
+            <div id="admin-login">
+                <input type="password" id="admin-pin" placeholder="الرمز السري (RIH-AIS-26)" style="text-align:center; letter-spacing:5px; font-size:1.5rem;">
+                <button class="btn-submit-large" style="width:100%; justify-content:center; margin-top:15px;" onclick="checkPin()">دخول</button>
+            </div>
+
+            <div id="admin-dashboard" style="display: none;">
+                <div class="admin-tabs">
+                    <button class="tab-btn active" onclick="switchTab('bookings')">الحجوزات</button>
+                    <button class="tab-btn" onclick="switchTab('settings')">إعدادات الخدمات</button>
+                </div>
+
+                <div id="tab-bookings" class="tab-content active">
+                    <button onclick="fetchAllBookingsForAdmin()" style="padding:5px 10px; margin-bottom:10px; background:#ddd; border:none; border-radius:5px; cursor:pointer;">
+                        <i class="fa-solid fa-rotate-right"></i> تحديث القائمة
+                    </button>
+                    <div class="admin-table-wrapper">
+                        <table id="bookings-table">
+                            <thead><tr><th>الاسم</th><th>التاريخ</th><th>الوقت</th><th>الخدمات</th><th>السعر</th><th>حذف</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="tab-settings" class="tab-content">
+                    <h3>تفعيل / تعطيل الخدمات</h3>
+                    <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">قم بإيقاف الخدمات مؤقتاً.</p>
+                    <div id="settings-toggles"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal-overlay" id="success-modal">
+        <div class="modal-content">
+            <i class="fa-solid fa-circle-check" style="font-size:4rem; color:var(--success); margin-bottom:10px;"></i>
+            <h2>تم الحجز بنجاح!</h2>
+            <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin:20px 0; text-align:right;">
+                <div id="success-invoice"></div>
+            </div>
+            <button class="btn-submit-large" style="width:100%; justify-content:center;" onclick="closeModal('success-modal')">إغلاق</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        //  CONFIG & UTILS
+        // ==========================================
+        
+        const BASE_PRICE = 1200; 
+        const ADMIN_PIN = 'RIH-AIS-26';
+        const API_URL = "https://sheetdb.io/api/v1/b6t4rmusddw61";
+
+        const SERVICES_DEF = {
+            'regular': { name: 'سباحة عادية', price: 0, icon: 'fa-person-swimming', type: 'base' },
+            'ps5': { name: 'بلاي ستيشن 5', price: 1300, icon: 'fa-brands fa-playstation', type: 'addon' }, 
+            'camera': { name: 'كاميرا فورية', price: 1300, icon: 'fa-solid fa-camera', type: 'addon' }, 
+            'cinema': { name: 'سينما', price: 1800, icon: 'fa-solid fa-film', type: 'addon' }, 
+            'birthday': { name: 'عيد ميلاد', price: 2800, icon: 'fa-solid fa-cake-candles', type: 'addon' }, 
+            'graduation': { name: 'حفلة تخرج', price: 3800, icon: 'fa-solid fa-graduation-cap', type: 'addon' } 
+        };
+
+        let state = {
+            date: new Date().toISOString().split('T')[0],
+            time: null,
+            duration: 2,
+            selectedServices: new Set(['regular']),
+            bookings: [],
+            siteSettings: JSON.parse(localStorage.getItem('pool_settings_v10')) || {
+                ps5: true, camera: true, cinema: true, birthday: true, graduation: true
+            },
+            isProcessing: false // Flag to prevent double clicks
+        };
+
+        let pollingInterval = null;
+
+        // Simple UUID Generator for safer IDs
+        function generateUUID() {
+            return 'xxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('booking-date').value = state.date;
+            initServicesUI();
+            fetchBookingsForDate(state.date);
+            startLiveSync();
+        });
+
+        // ==========================================
+        //  LIVE SYNC & API
+        // ==========================================
+
+        function startLiveSync() {
+            if (pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(() => {
+                if(state.date && !state.isProcessing) {
+                    syncDateSilently(state.date);
+                }
+            }, 5000);
+        }
+
+        async function fetchBookingsForDate(date, showLoader = true) {
+            if(showLoader) showLoading(true, "جاري تحميل الأوقات...");
+            try {
+                const response = await fetch(`${API_URL}/search?date=${date}`);
+                const data = await response.json();
+                
+                state.bookings = state.bookings.filter(b => b.date !== date);
+                state.bookings = [...state.bookings, ...data];
+                
+                renderSlots();
+            } catch (error) {
+                console.error("Sync Error:", error);
+                if(showLoader) alert("فشل الاتصال بالسيرفر، تأكد من الإنترنت.");
+            } finally {
+                if(showLoader) showLoading(false);
+            }
+        }
+
+        async function syncDateSilently(date) {
+            try {
+                const response = await fetch(`${API_URL}/search?date=${date}`);
+                const data = await response.json();
+                const currentDayBookings = state.bookings.filter(b => b.date === date);
+                
+                // Basic check to update if length changes (Optimization)
+                if (currentDayBookings.length !== data.length) {
+                    state.bookings = state.bookings.filter(b => b.date !== date);
+                    state.bookings = [...state.bookings, ...data];
+                    renderSlots();
+                }
+            } catch (e) { /* Silent fail */ }
+        }
+
+        function showLoading(show, text = "جاري المعالجة...") {
+            const overlay = document.getElementById('loading-overlay');
+            document.getElementById('loading-text').innerText = text;
+            if (show) overlay.classList.add('active');
+            else overlay.classList.remove('active');
+        }
+
+        function saveSettings() {
+            localStorage.setItem('pool_settings_v10', JSON.stringify(state.siteSettings));
+            updateServicesVisuals();
+        }
+
+        // ==========================================
+        //  UI LOGIC
+        // ==========================================
+
+        function initServicesUI() {
+            const container = document.getElementById('services-container');
+            container.innerHTML = '';
+            Object.keys(SERVICES_DEF).forEach(key => {
+                const svc = SERVICES_DEF[key];
+                const div = document.createElement('div');
+                div.className = `service-card ${svc.type === 'base' ? 'fixed' : 'selectable'}`;
+                div.id = `svc-${key}`;
+                div.innerHTML = `
+                    <i class="${svc.icon} service-icon"></i>
+                    <span class="service-name">${svc.name}</span>
+                    <span class="service-price">${svc.price === 0 ? 'الأساسي' : '+' + svc.price + ' د.ج/ساعة'}</span>
+                `;
+                if (svc.type === 'addon') div.onclick = () => toggleService(key);
+                container.appendChild(div);
+            });
+            updateServicesVisuals();
+        }
+
+        function toggleService(key) {
+            if (!state.siteSettings[key]) { alert("هذه الخدمة متوقفة حالياً"); return; }
+            if (state.selectedServices.has(key)) state.selectedServices.delete(key);
+            else state.selectedServices.add(key);
+            updateServicesVisuals();
+            updateCalculations();
+        }
+
+        function updateServicesVisuals() {
+            Object.keys(SERVICES_DEF).forEach(key => {
+                const el = document.getElementById(`svc-${key}`);
+                if (!el) return;
+                el.classList.remove('active', 'disabled');
+                if (SERVICES_DEF[key].type === 'addon' && !state.siteSettings[key]) { el.classList.add('disabled'); return; }
+                if (state.selectedServices.has(key)) el.classList.add('active');
+            });
+        }
+
+        function renderSettingsToggles() {
+            const container = document.getElementById('settings-toggles');
+            container.innerHTML = '';
+            Object.keys(state.siteSettings).forEach(key => {
+                if (key === 'regular') return; 
+                const label = SERVICES_DEF[key].name;
+                const row = document.createElement('div');
+                row.className = 'toggle-row';
+                row.innerHTML = `
+                    <span>${label}</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" ${state.siteSettings[key] ? 'checked' : ''} onchange="window.toggleSetting('${key}', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                `;
+                container.appendChild(row);
+            });
+        }
+        window.toggleSetting = (key, isChecked) => { state.siteSettings[key] = isChecked; saveSettings(); };
+
+        function handleDateChange() {
+            state.date = document.getElementById('booking-date').value;
+            state.time = null;
+            fetchBookingsForDate(state.date);
+            updateCalculations();
+        }
+
+        function renderSlots() {
+            const container = document.getElementById('slots-container');
+            container.innerHTML = '';
+            const startHour = 9; 
+            const endHour = 23;
+
+            for (let h = startHour; h <= endHour; h++) {
+                const el = document.createElement('div');
+                el.className = 'slot';
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const h12 = h % 12 || 12;
+                
+                const isTaken = state.bookings.some(b => {
+                    if (b.date !== state.date) return false;
+                    const bStart = parseInt(b.time);
+                    const bEnd = bStart + parseInt(b.duration);
+                    return h >= bStart && h < bEnd;
+                });
+
+                if (isTaken) {
+                    el.classList.add('booked');
+                    el.innerHTML = `<i class="fa-solid fa-lock"></i><span>${h12}:00</span>`;
+                    el.onclick = null;
+                } else {
+                    el.innerHTML = `<span>${h12}:00</span>`;
+                    el.onclick = () => selectTime(h, el);
+                }
+                container.appendChild(el);
+            }
+        }
+
+        function selectTime(hour, el) {
+            document.querySelectorAll('.slot.selected').forEach(s => s.classList.remove('selected'));
+            el.classList.add('selected');
+            state.time = hour;
+            validateTime();
+            updateCalculations();
+        }
+
+        function updateDuration() {
+            state.duration = parseInt(document.getElementById('duration').value);
+            validateTime();
+            updateCalculations();
+        }
+
+        function validateTime() {
+            const btn = document.getElementById('btn-confirm');
+            const msg = document.getElementById('status-msg');
+            if (!state.time) { btn.disabled = true; return; }
+            if (state.time + state.duration > 24) {
+                msg.innerText = "⚠️ يتجاوز وقت الإغلاق";
+                msg.style.color = "var(--danger)";
+                btn.disabled = true;
+            } else {
+                msg.innerText = "";
+                btn.disabled = false;
+            }
+        }
+
+        function updateCalculations() {
+            let total = (BASE_PRICE * state.duration); 
+            let htmlInvoice = `
+                <div class="invoice-row">
+                    <span><i class="fa-solid fa-water"></i> سباحة عادية (${state.duration}س)</span>
+                    <span>${(BASE_PRICE * state.duration).toLocaleString()} د.ج</span>
+                </div>
+            `;
+            state.selectedServices.forEach(key => {
+                if (key !== 'regular') {
+                    const svc = SERVICES_DEF[key];
+                    const cost = svc.price * state.duration;
+                    total += cost;
+                    htmlInvoice += `
+                        <div class="invoice-row" style="color: var(--primary-dark); font-weight:600;">
+                            <span>+ ${svc.name} (${state.duration}س)</span>
+                            <span>+${cost.toLocaleString()} د.ج</span>
+                        </div>
+                    `;
+                }
+            });
+            htmlInvoice += `<hr style="margin:10px 0; border:0; border-top:1px dashed #ccc;">
+                     <div class="invoice-row" style="font-weight:800; font-size:1.2rem; margin-top:10px; color:var(--primary-dark);">
+                        <span>الإجمالي النهائي</span>
+                        <span>${total.toLocaleString()} د.ج</span>
+                     </div>`;
+            document.getElementById('invoice-details').innerHTML = htmlInvoice;
+            document.getElementById('sticky-total-display').innerText = total.toLocaleString() + ' د.ج';
+            document.getElementById('sticky-bar').classList.add('visible');
+        }
+
+        // ==========================================
+        //  ROBUST SUBMISSION (No Malfunctions)
+        // ==========================================
+        window.submitBooking = async () => {
+            if (state.isProcessing) return; // Prevent double clicks
+
+            // 1. Input Validation
+            const nameInput = document.getElementById('client-name');
+            const phoneInput = document.getElementById('client-phone');
+            const name = nameInput.value.trim();
+            let phone = phoneInput.value.trim().replace(/\D/g, ''); // Remove non-digits
+
+            let hasError = false;
+
+            // Name check
+            if (name.length < 3) {
+                document.getElementById('error-name').style.display = 'block';
+                hasError = true;
+            } else {
+                document.getElementById('error-name').style.display = 'none';
+            }
+
+            // Phone check (Algerian format usually 10 digits starting 0/5/6/7)
+            if (phone.length !== 10 || !phone.startsWith('0')) {
+                document.getElementById('error-phone').style.display = 'block';
+                hasError = true;
+            } else {
+                document.getElementById('error-phone').style.display = 'none';
+            }
+
+            if (hasError) return;
+
+            // Lock UI
+            state.isProcessing = true;
+            const btn = document.getElementById('btn-confirm');
+            const originalBtnText = btn.innerHTML;
+            btn.classList.add('loading');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري التأكيد...`;
+            showLoading(true, "جاري التحقق من التوفر...");
+
+            try {
+                // 2. DEEP CONFLICT CHECK (Fetch All for Date)
+                // We do this to ensure we catch overlaps that simple search might miss
+                const response = await fetch(`${API_URL}/search?date=${state.date}`);
+                if (!response.ok) throw new Error("Network Error");
+                const dayBookings = await response.json();
+
+                // Logic: (StartA < EndB) and (EndA > StartB)
+                const requestedStart = state.time;
+                const requestedEnd = state.time + state.duration;
+
+                const hasOverlap = dayBookings.some(b => {
+                    const bookedStart = parseInt(b.time);
+                    const bookedEnd = bookedStart + parseInt(b.duration);
+                    return (requestedStart < bookedEnd && requestedEnd > bookedStart);
+                });
+
+                if (hasOverlap) {
+                    throw new Error("CONFLICT"); // Special error for conflict
+                }
+
+                // 3. Calculate & POST
+                let total = (BASE_PRICE * state.duration);
+                state.selectedServices.forEach(key => {
+                    if (key !== 'regular') total += (SERVICES_DEF[key].price * state.duration);
+                });
+                const servicesList = Array.from(state.selectedServices).map(k => SERVICES_DEF[k].name).join(' + ');
+
+                const bookingData = {
+                    id: generateUUID(), // Unique ID
+                    date: state.date,
+                    time: state.time,
+                    duration: state.duration,
+                    name: name,
+                    phone: phone,
+                    services: servicesList,
+                    total: total
+                };
+
+                const postResponse = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bookingData)
+                });
+
+                if (!postResponse.ok) throw new Error("Server Error");
+
+                // 4. Success
+                await fetchBookingsForDate(state.date); // Reload to reflect changes
+                
+                const ampm = bookingData.time >= 12 ? 'PM' : 'AM';
+                const h12 = bookingData.time % 12 || 12;
+                document.getElementById('success-invoice').innerHTML = `
+                    <p><strong>العميل:</strong> ${bookingData.name}</p>
+                    <p><strong>الموعد:</strong> ${bookingData.date} - ${h12}:00 ${ampm}</p>
+                    <p><strong>الخدمات:</strong> ${bookingData.services}</p>
+                    <h3 style="color:var(--primary-dark); margin-top:10px;">${bookingData.total.toLocaleString()} د.ج</h3>
+                `;
+                document.getElementById('success-modal').classList.add('active');
+
+                // Reset Form
+                nameInput.value = '';
+                phoneInput.value = '';
+                state.time = null;
+                state.selectedServices = new Set(['regular']);
+                updateServicesVisuals();
+                renderSlots();
+                updateCalculations();
+
+            } catch (error) {
+                console.error(error);
+                if (error.message === "CONFLICT") {
+                    alert("عذراً، تم حجز هذا التوقيت للتو من قبل عميل آخر! يرجى اختيار وقت مختلف.");
+                    fetchBookingsForDate(state.date); // Refresh immediately
+                } else {
+                    alert("حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.");
+                }
+            } finally {
+                // Unlock UI
+                state.isProcessing = false;
+                btn.classList.remove('loading');
+                btn.innerHTML = originalBtnText;
+                showLoading(false);
+            }
+        };
+
+        // --- Admin ---
+        window.openAdmin = () => document.getElementById('admin-modal').classList.add('active');
+        window.closeModal = (id) => document.getElementById(id).classList.remove('active');
+        
+        window.checkPin = () => {
+            if (document.getElementById('admin-pin').value === ADMIN_PIN) {
+                document.getElementById('admin-login').style.display = 'none';
+                document.getElementById('admin-dashboard').style.display = 'block';
+                fetchAllBookingsForAdmin();
+                renderSettingsToggles();
+            } else {
+                alert("رمز خاطئ");
+            }
+        };
+
+        window.switchTab = (tabName) => {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            event.target.classList.add('active');
+        };
+
+        async function fetchAllBookingsForAdmin() {
+            showLoading(true, "جاري تحديث سجل الحجوزات...");
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                state.bookings = data;
+                renderAdminTable(data);
+            } catch(e) { alert("خطأ في التحميل"); }
+            showLoading(false);
+        }
+
+        function renderAdminTable(data) {
+            const tbody = document.querySelector('#bookings-table tbody');
+            tbody.innerHTML = '';
+            const sorted = [...data].sort((a,b) => (parseInt(b.id, 36) || 0) - (parseInt(a.id, 36) || 0)); // Sort by UUID roughly
+            sorted.forEach(b => {
+                const tr = document.createElement('tr');
+                const ampm = b.time >= 12 ? 'PM' : 'AM';
+                const h12 = b.time % 12 || 12;
+                tr.innerHTML = `
+                    <td>${b.name}<br><small style="color:#888">${b.phone}</small></td>
+                    <td>${b.date}</td>
+                    <td>${h12}:00 ${ampm}</td>
+                    <td>${b.services}</td>
+                    <td>${b.total} د.ج</td>
+                    <td><button class="btn-cancel" onclick="deleteBookingFromSheet('${b.id}')">حذف</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.deleteBookingFromSheet = async (id) => {
+            if(!confirm('حذف الحجز نهائياً؟')) return;
+            showLoading(true, "جاري الحذف...");
+            try {
+                await fetch(`${API_URL}/id/${id}`, { method: 'DELETE' });
+                alert("تم الحذف بنجاح");
+                await fetchAllBookingsForAdmin();
+                await fetchBookingsForDate(state.date);
+            } catch (e) { alert("فشل الحذف، تحقق من الاتصال"); }
+            showLoading(false);
+        }
+
+    </script>
+</body>
+</html>
